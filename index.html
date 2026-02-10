@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestão de Utilizadores</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Gestão de Utilizadores</h1>
+
+<h2>Inserir Novo Utilizador</h2>
+
+<input id="nome" placeholder="Nome">
+<input id="email" placeholder="Email">
+<input id="password" placeholder="Password">
+<button onclick="inserir()">Inserir</button>
+
+<hr>
+
+<h2>Pesquisar</h2>
+
+<input id="pesquisa" placeholder="Pesquisar por nome">
+<button onclick="pesquisar()">Pesquisar</button>
+
+<hr>
+
+<h2>Lista de Utilizadores</h2>
+
+<div id="resultados"></div>
+
+<script>
+
+async function carregar() {
+    let resposta = await fetch("http://localhost:5000/api/Utilizadores/select");
+    let dados = await resposta.json();
+    mostrar(dados);
+}
+
+function mostrar(lista) {
+
+    let div = document.getElementById("resultados");
+
+    if (lista.length === 0) {
+        div.innerHTML = "<p>Nenhum resultado encontrado.</p>";
+        return;
+    }
+
+    let tabela = "<table class='tabela-bonita'>";
+
+    // Criar cabeçalhos dinamicamente
+    tabela += "<tr>";
+
+    let colunas = Object.keys(lista[0]);
+
+    for (let coluna of colunas) {
+        tabela += `<th>${coluna}</th>`;
+    }
+
+    tabela += "<th>Ações</th></tr>";
+
+    // Criar linhas
+    for (let u of lista) {
+        tabela += "<tr>";
+
+        for (let coluna of colunas) {
+            tabela += `<td>${u[coluna]}</td>`;
+        }
+
+        tabela += `
+        <td>
+            <button onclick="apagar(${u[colunas[0]]})">Apagar</button>
+            <button onclick='editar(${u[colunas[0]]})'>Editar</button>
+        </td>`;
+
+        tabela += "</tr>";
+    }
+
+    tabela += "</table>";
+
+    div.innerHTML = tabela;
+}
+
+async function inserir() {
+
+    let dados = {
+        ID_User: Math.floor(Math.random() * 10000),
+        Nome: document.getElementById("nome").value,
+        Email: document.getElementById("email").value,
+        PalavraPasse: document.getElementById("password").value,
+        Tipo_User: 1,
+        Estado: 1,
+        Data_Criacao: "2025-01-01",
+        Ultimo_Login: "2025-01-01"
+    };
+
+    await fetch("http://localhost:5000/api/Utilizadores/insert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dados)
+    });
+
+    carregar();
+}
+
+async function apagar(id) {
+
+    await fetch("http://localhost:5000/api/Utilizadores/delete/" + id, {
+        method: "POST"
+    });
+
+    carregar();
+}
+
+async function editar(id, nomeAtual, emailAtual) {
+
+    let novoNome = prompt("Novo nome:", nomeAtual);
+    let novoEmail = prompt("Novo email:", emailAtual);
+
+    let dados = {
+        Nome: novoNome,
+        Email: novoEmail
+    };
+
+    await fetch("http://localhost:5000/api/Utilizadores/update/" + id, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dados)
+    });
+
+    carregar();
+}
+
+async function pesquisar() {
+
+    let texto = document.getElementById("pesquisa").value.toLowerCase();
+
+    let resposta = await fetch("http://127.0.0.1:5000/api/Utilizadores/select");
+    let dados = await resposta.json();
+
+    let filtrados = dados.filter(u => {
+
+        for (let chave in u) {
+            if (String(u[chave]).toLowerCase().includes(texto)) {
+                return true;
+            }
+        }
+
+        return false;
+    });
+
+    mostrar(filtrados);
+}
+
+window.onload = carregar;
+
+</script>
+
+</body>
+</html>
